@@ -81,7 +81,7 @@
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo-back">
+  <a href="../index.html" class="nav-logo-back">
     <span class="comment">{</span><span class="nav-logo-name" data-zh="返回索引" data-en="Back">返回索引</span><span class="comment">}</span>
   </a>
   <div class="nav-right">
