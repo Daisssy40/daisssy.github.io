@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>黄粱一梦 - // Shihan_He</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── 延续主页的基础变量与复位 ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #faf8f5; --surface: #ffffff; --border: #e8e2d9;
+    --text: #2c2825; --muted: #8a8078; --soft: #b5afa6;
+    --accent: #c17d4a; --accent-light: #f5ede3;
+    --font-serif: 'Lora', Georgia, serif; --font-sans: 'Inter', sans-serif;
+    /* 详情页采用更窄的单栏宽度，优化阅读体验 */
+    --max-article: 680px; 
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 16px; line-height: 1.8; overflow-x: hidden; }
+
+  /* ── NAV (延续主页，修改 Logo 逻辑) ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 2.5rem; background: rgba(250,248,245,0.94); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  /* 返回首页的 Logo 样式 */
+  .nav-logo-back { font-family: 'Courier New', monospace; font-size: 0.95rem; text-decoration: none; color: var(--text); display: flex; align-items: baseline; transition: color 0.18s; }
+  .nav-logo-back:hover { color: var(--accent); }
+  .nav-logo-back .comment { color: var(--soft); transition: color 0.18s; }
+  .nav-logo-back:hover .comment { color: var(--accent); }
+  
+  .nav-right { display: flex; align-items: center; gap: 2rem; }
+  .lang-btn { font-size: 0.78rem; color: var(--muted); cursor: pointer; border: 1px solid var(--border); background: none; padding: 0.28rem 0.65rem; border-radius: 0.25rem; transition: all 0.18s; font-family: var(--font-sans); }
+  .lang-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── ARTICLE LAYOUT ── */
+  .main-container { padding: 8rem 2rem 6rem; max-width: var(--max-article); margin: 0 auto; }
+
+  /* ── ARTICLE HEADER (参考 Substack) ── */
+  .article-header { margin-bottom: 3.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
+  .article-category { font-size: 0.7rem; letter-spacing: 0.13em; color: var(--accent); text-transform: uppercase; margin-bottom: 0.75rem; font-weight: 500; }
+  .article-title { font-family: var(--font-serif); font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 400; line-height: 1.25; color: var(--text); margin-bottom: 1rem; }
+  .article-title em { font-style: normal; color: var(--accent); } /* 确保 em 不斜体 */
+  .article-meta { font-size: 0.85rem; color: var(--muted); font-weight: 300; display: flex; gap: 1rem; align-items: center; }
+  .author-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--soft); font-family: 'Courier New', monospace; }
+
+  /* ── ARTICLE CONTENT (正文排腰) ── */
+  .article-prose { font-size: 1.05rem; color: var(--text); line-height: 1.9; font-weight: 300; }
+  .article-prose p { margin-bottom: 1.8rem; }
+  .article-prose p:last-child { margin-bottom: 0; }
+  .article-prose strong { color: var(--text); font-weight: 500; }
+  
+  /* 针对中文字符的微调 */
+  [lang="zh-CN"] .article-prose { letter-spacing: 0.01em; }
+
+  /* ── POST-ARTICLE NAVIGATION (参考 Substack 页脚) ── */
+  .post-nav { margin-top: 6rem; padding-top: 3rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 2rem; }
+  .post-nav-label { font-size: 0.75rem; letter-spacing: 0.1em; color: var(--soft); text-transform: uppercase; font-weight: 500; text-align: center; }
+  .post-nav-links { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  
+  .nav-card { background: var(--surface); border: 1px solid var(--border); padding: 1.5rem; border-radius: 0.5rem; text-decoration: none; color: inherit; transition: all 0.2s; display: flex; flex-direction: column; }
+  .nav-card:hover { border-color: var(--accent); transform: translateY(-2px); background: var(--accent-light); }
+  .nav-card-dir { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+  .nav-card-title { font-family: var(--font-serif); font-size: 1rem; font-weight: 500; color: var(--text); line-height: 1.4; }
+
+  /* ── FOOTER ── */
+  footer { border-top: 1px solid var(--border); padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; color: var(--soft); font-size: 0.78rem; max-width: var(--max-article); margin: 0 auto; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 680px) {
+    nav { padding: 0.9rem 1.25rem; }
+    .main-container { padding-left: 1.25rem; padding-right: 1.25rem; padding-top: 7rem; }
+    .article-header { margin-bottom: 2.5rem; }
+    .post-nav-links { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-logo-back">
+    <span class="comment">{</span><span class="nav-logo-name" data-zh="返回索引" data-en="Back">返回索引</span><span class="comment">}</span>
+  </a>
+  <div class="nav-right">
+    <button type="button" class="lang-btn" onclick="toggleLang()">中 / EN</button>
+  </div>
+</nav>
+<main class="main-container">
+  
+    <header class="article-header">
+      <div class="article-category" data-zh="思考存档 · 随笔" data-en="Archive · Reflections">思考存档 · 随笔</div>
+      <h1 class="article-title"
+        data-zh="海市蜃楼"
+        data-en="Mirage">
+        海市蜃楼
+      </h1>
+      <div class="article-meta">
+        <div class="author-avatar">//</div>
+        <span data-zh="何诗涵" data-en="Shihan He">何诗涵</span>
+        <span style="color:var(--border)">|</span>
+        <span>2022</span>
+      </div>
+    </header>
+
+    <article class="article-prose" id="article-content">
+
+            <p>既然不满与自我如今的状态，好似奋斗上进，其实并未十分努力的生活。</p>
+            
+            <p>你看，就像这时间，一分一秒的过去，一分一秒的人，似乎有着向前的趋势，有着努力的意向，可这一切，不过就像一切事物在阳光下的影子，影子乎长乎短，忽远忽近，这一切终究是日下阴影。而那事物的本质，改变了吗？</p>
+            
+            <p>没有，依旧在原地，在一分一毫的流逝中，固步不前，却自以为，在时光中前进改变，可这一切不过是海市蜃楼般的虚幻泡影。就像海市蜃楼的原理，需要光，需要不同的介质，需要一定的角度，才可以形成的折射与反射。但当这一切消失时，蜃景也消失了，一切回到现实，沉浸于梦中的人，被现实迎头痛击，痛苦挣扎。</p>
+
+            <p>但为何，我们要选择如此。</p>
+
+            <div class="highlight">
+                <p>恳切而直接的话，</p>
+                <p>没有虚伪，没有掩盖，没有好大喜功，没有粉饰太平，在风浪里，不作秀，不浮躁，真的在改善，真的在进步。</p>
+            </div>
+    </article>
+
+</main>
+
+<div class="divider" style="max-width:var(--max-article);"></div>
+
+<footer>
+  <span data-zh="何诗涵 Shihan He · © 2026" data-en="Shihan He · © 2026">何诗涵 Shihan He · © 2026</span>
+</footer>
+
+<script>
+    (function() {
+      // 定义中英文正文（因为正文太长，不适合放在 data- 属性里）
+      const articleContent_ZH = `
+        <p>既然不满与自我如今的状态，好似奋斗上进，其实并未十分努力的生活。</p>
+            
+        <p>你看，就像这时间，一分一秒的过去，一分一秒的人，似乎有着向前的趋势，有着努力的意向，可这一切，不过就像一切事物在阳光下的影子，影子乎长乎短，忽远忽近，这一切终究是日下阴影。而那事物的本质，改变了吗？</p>
+            
+        <p>没有，依旧在原地，在一分一毫的流逝中，固步不前，却自以为，在时光中前进改变，可这一切不过是海市蜃楼般的虚幻泡影。就像海市蜃楼的原理，需要光，需要不同的介质，需要一定的角度，才可以形成的折射与反射。但当这一切消失时，蜃景也消失了，一切回到现实，沉浸于梦中的人，被现实迎头痛击，痛苦挣扎。</p>
+
+        <p>但为何，我们要选择如此。</p>
+
+        <div class="highlight">
+            <p>恳切而直接的话，</p>
+            <p>没有虚伪，没有掩盖，没有好大喜功，没有粉饰太平，在风浪里，不作秀，不浮躁，真的在改善，真的在进步。</p>
+        </div>
+      `;
+    
+      const articleContent_EN = `
+        <p>By some twists of fate, I suddenly found myself at the airport, saying goodbye to a friend returning to their home country.</p>
+        <p>When I was a child, watching TV made me think that buying a ticket to cross the Eurasian continent with just a phone call was a cool thing. It was like seeing older sisters working on laptops on planes or trains; it made me feel that one day I would be like that, very cool.</p>
+        <p>But it was only when it actually happened that I suddenly realized.</p>
+        <p>It turns out all of this is a flower in water, a reflection in a mirror.</p>
+        <p>Like a pair of scissors, piercing into a warm embrace.</p>
+        <p>Enough to change everyone. It is truly not cool at all.</p>
+        <p>The sudden message made my head swell but also left me incredibly stable and calm. Tears were like water just filled in a kettle; one shake and they would overflow. I could only walk forward, perfectly balanced.</p>
+        <p>And all these feelings might just be similar fragments of life memories I once had, only back then, I was young and in my hometown. Now, I am far away, thousands of miles across a 12-hour flight. In this country where I have stayed for many years, through various adventures in life, I seem to have been to many places, far more than in China. I have taken a 9-hour train ride to the northernmost tip of this continent (or small island); I have taken a boat for over an hour to hike and watch birds on a deserted island. I might even leave a quarter of my life in this place, maybe more. It went so far that when I landed in Manchester from New York, the moment I landed, it felt like I had returned home.</p>
+        <p>But, how do we define home?</p>
+        <p>It is not just a feeling. Home seems to have anchors, yet it is fluid. It is made up of living, breathing individuals.</p>
+        <p>And people, in some sense, are finite individual beings.</p>
+        <p>Souls continue, turning into everything in the world, a presence drifting in space. I don't seem to have a visceral understanding of this either. The death of my grandfather, the death of my uncle, the passing of the elderly people I knew. To me, it seems as though their physical bodies are eternally preserved in another space, yet in my memory, they remain dear. To the point where, every time I visit a grave, it is a slap of reality in my face.</p>
+        <p>I fear death, just as I fear a life that needs to bear responsibility.</p>
+        <p>The fragility of life might be a realization accumulated from required courses in life, but I seem never to have gotten ready.</p>
+        <p>But is readiness that important? Like the Sword of Damocles hanging overhead, although ready for its fall. I don't like this, and I don't want this. Live in the present; the future is sometimes just waiting in the future.</p>
+        <p>Then let us walk forward with the torrent of time, even if engulfed, even if hurt, we must walk forward. Scars will heal, and the marks left behind are proof of existence, and medals.</p>
+      `;
+    
+      var lang = 'zh';
+      const contentEl = document.getElementById('article-content');
+    
+      function applyLang(l) {
+        lang = l;
+        // 1. 处理带有 data- 属性的极简文本
+        document.querySelectorAll('[data-zh]').forEach(function(el) {
+          var val = el.getAttribute(l === 'zh' ? 'data-zh' : 'data-en');
+          if (val != null) el.innerHTML = val;
+        });
+        
+        // 2. 特殊处理长正文
+        if (contentEl) {
+          contentEl.innerHTML = l === 'zh' ? articleContent_ZH : articleContent_EN;
+        }
+    
+        // 3. 设置页面语言属性和按钮文本
+        document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en';
+        var btn = document.querySelector('.lang-btn');
+        if (btn) btn.textContent = l === 'zh' ? '中 / EN' : 'EN / 中';
+      }
+    
+      window.toggleLang = function() {
+        applyLang(lang === 'zh' ? 'en' : 'zh');
+      };
+    
+      // 默认载入中文
+      applyLang('zh');
+    })();
+    </script>
+    </body>
+    </html>
