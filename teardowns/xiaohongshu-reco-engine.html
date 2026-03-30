@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小红书的推荐引擎——为什么它让你停不下来</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #FF2442;
+    --red-soft: #FF5C73;
+    --red-pale: #FFF0F2;
+    --ink: #1A1018;
+    --ink-mid: #4A3848;
+    --ink-light: #8B7A89;
+    --cream: #FBF8F5;
+    --warm-white: #FFFDF9;
+    --gold: #D4A853;
+    --gold-light: #F0D99A;
+    --border: #E8DDD6;
+    --mono: 'Space Mono', monospace;
+    --serif: 'Noto Serif SC', serif;
+    --sans: 'Noto Sans SC', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: var(--serif);
+    line-height: 1.9;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 6rem 2rem 4rem;
+    overflow: hidden;
+    background: var(--ink);
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 30%, #3D0A14 0%, #1A1018 55%, #0D0A0E 100%);
+    z-index: 0;
+  }
+
+  .hero-noise {
+    position: absolute; inset: 0; z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.5;
+  }
+
+  .hero-accent {
+    position: absolute;
+    top: -120px; right: -80px;
+    width: 520px; height: 520px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,36,66,0.18) 0%, transparent 70%);
+    z-index: 1;
+    animation: pulse 6s ease-in-out infinite;
+  }
+
+  .hero-accent-2 {
+    position: absolute;
+    bottom: 60px; left: -100px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,168,83,0.08) 0%, transparent 70%);
+    z-index: 1;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.75; }
+  }
+
+  .hero-tag {
+    position: relative; z-index: 2;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--red-soft);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .hero-tag::before {
+    content: '';
+    display: block; width: 28px; height: 1px;
+    background: var(--red-soft);
+  }
+
+  .hero-title {
+    position: relative; z-index: 2;
+    font-family: var(--serif);
+    font-size: clamp(2rem, 6vw, 4.5rem);
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    max-width: 820px;
+  }
+
+  .hero-title .accent { color: var(--red); }
+
+  /* General accent highlight (used in body copy too). */
+  .accent { color: var(--red-soft); font-weight: 400; }
+
+  .hero-sub {
+    position: relative; z-index: 2;
+    font-family: var(--sans);
+    font-size: 1rem;
+    color: rgba(255,255,255,0.45);
+    font-weight: 300;
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+  }
+
+  .hero-meta {
+    position: relative; z-index: 2;
+    display: flex; gap: 2.5rem; flex-wrap: wrap;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 1.5rem;
+  }
+
+  .hero-meta-item {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .hero-meta-item strong {
+    display: block;
+    color: var(--gold-light);
+    font-size: 1.2rem;
+    font-family: var(--serif);
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+
+  /* ── SCROLL INDICATOR ── */
+  .scroll-indicator {
+    position: absolute; bottom: 2rem; right: 2rem; z-index: 5;
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    font-family: var(--mono); font-size: 0.6rem;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.15em;
+    animation: fadeInUp 1.5s ease both;
+    animation-delay: 1s;
+  }
+
+  .scroll-line {
+    width: 1px; height: 48px;
+    background: linear-gradient(to bottom, var(--red-soft), transparent);
+    animation: lineGrow 1.8s ease-in-out infinite;
+    transform-origin: top;
+  }
+
+  @keyframes lineGrow {
+    0%, 100% { transform: scaleY(0); opacity: 0; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  /* ── INTRO HOOK ── */
+  .hook-section {
+    background: var(--warm-white);
+    padding: 5rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hook-inner {
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  .big-question {
+    font-family: var(--serif);
+    font-size: clamp(1.5rem, 3.5vw, 2.4rem);
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.4;
+    margin-bottom: 2.5rem;
+    position: relative;
+    padding-left: 1.5rem;
+    border-left: 3px solid var(--red);
+  }
+
+  .lead-para {
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    color: var(--ink-mid);
+    font-weight: 300;
+    line-height: 1.9;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 3rem 0;
+  }
+
+  .stat-box {
+    background: var(--warm-white);
+    padding: 1.8rem 1.5rem;
+    text-align: center;
+  }
+
+  .stat-number {
+    font-family: var(--serif);
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--red);
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: var(--ink-light);
+    text-transform: uppercase;
+  }
+
+  /* ── BODY CONTENT ── */
+  .article-body {
+    background: var(--cream);
+    padding: 4rem 2rem 6rem;
+  }
+
+  .section {
+    max-width: 820px;
+    margin: 0 auto 5rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 2rem;
+  }
+
+  .body-text {
+    font-family: var(--sans);
+    font-size: 0.975rem;
+    color: var(--ink-mid);
+    font-weight: 300;
+    line-height: 1.95;
+    margin-bottom: 1.4rem;
+  }
+
+  /* ── PULL QUOTE ── */
+  .pull-quote {
+    margin: 3rem 0;
+    padding: 2.5rem 2rem 2.5rem 2.5rem;
+    border-left: 4px solid var(--red);
+    background: var(--red-pale);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pull-quote::before {
+    content: '"';
+    position: absolute;
+    top: -0.5rem; left: 1rem;
+    font-family: var(--serif);
+    font-size: 8rem;
+    color: var(--red);
+    opacity: 0.1;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .pull-quote p {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.6;
+    position: relative; z-index: 1;
+  }
+
+  /* ── BRAIN MODEL ── */
+  .brain-model {
+    margin: 3rem 0;
+    background: var(--ink);
+    border-radius: 4px;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .brain-header {
+    background: #241620;
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center; gap: 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .brain-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .brain-dot.r { background: #FF5F57; }
+  .brain-dot.y { background: #FEBC2E; }
+  .brain-dot.g { background: #28C840; }
+
+  .brain-title-bar {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.12em;
+    margin-left: auto;
+  }
+
+  .brain-body {
+    padding: 1.5rem 1.5rem 2rem;
+  }
+
+  .brain-comment {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.817);
+    margin-bottom: 1.2rem;
+  }
+
+  .signal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 560px) {
+    .signal-grid { grid-template-columns: 1fr; }
+  }
+
+  .signal-card {
+    border-radius: 3px;
+    padding: 1.2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .signal-card.social { background: #1E1030; border: 1px solid rgba(150,80,220,0.25); }
+  .signal-card.interest { background: #0F1E2A; border: 1px solid rgba(80,180,220,0.25); }
+
+  .signal-type {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .signal-card.social .signal-type { color: #C084FC; }
+  .signal-card.interest .signal-type { color: #67E8F9; }
+
+  .signal-name {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 0.7rem;
+  }
+
+  .signal-items {
+    list-style: none;
+  }
+
+  .signal-items li {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.45);
+    padding: 0.25rem 0;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .signal-items li::before {
+    content: '→';
+    font-size: 0.65rem;
+  }
+
+  .signal-card.social .signal-items li::before { color: #C084FC; }
+  .signal-card.interest .signal-items li::before { color: #67E8F9; }
+
+  /* ── PIPELINE VISUAL ── */
+  .pipeline {
+    margin: 3rem 0;
+  }
+
+  .pipeline-step {
+    display: flex;
+    gap: 1.2rem;
+    margin-bottom: 0.4rem;
+    position: relative;
+  }
+
+  .pipeline-step::before {
+    content: '';
+    position: absolute;
+    left: 20px; top: 42px;
+    width: 1px; height: calc(100% + 0.4rem - 2px);
+    background: var(--border);
+  }
+
+  .pipeline-step:last-child::before { display: none; }
+
+  .step-num {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+  }
+
+  .step-content {
+    flex: 1;
+    padding: 0.6rem 0 1.5rem;
+  }
+
+  .step-name {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 0.4rem;
+  }
+
+  .step-desc {
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    color: var(--ink-light);
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  .step-tag {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--red);
+    background: var(--red-pale);
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+  }
+
+  /* ── SCORE TABLE ── */
+  .score-table-wrap {
+    margin: 2.5rem 0;
+    overflow-x: auto;
+  }
+
+  .score-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 0.88rem;
+  }
+
+  .score-table thead th {
+    background: var(--ink);
+    color: #fff;
+    font-weight: 500;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+  }
+
+  .score-table tbody tr:nth-child(even) { background: rgba(0,0,0,0.03); }
+
+  .score-table tbody td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink-mid);
+    vertical-align: middle;
+  }
+
+  .score-table tbody td:first-child {
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .score-val {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--red);
+  }
+
+  .score-bar-wrap {
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+
+  .score-bar {
+    flex: 1; height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 80px;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--red-soft), var(--red));
+    border-radius: 3px;
+    transition: width 1s ease;
+  }
+
+  /* ── BALANCE SECTION ── */
+  .balance-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2rem;
+    margin: 2rem 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  @media (max-width: 560px) {
+    .balance-card { grid-template-columns: 1fr; }
+  }
+
+  .balance-side-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.7rem;
+  }
+
+  .balance-side.social .balance-side-label { color: #9333EA; }
+  .balance-side.interest .balance-side-label { color: #0EA5E9; }
+
+  .balance-side-title {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 0.8rem;
+  }
+
+  .balance-side ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .balance-side ul li {
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--ink-mid);
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 0.5rem;
+  }
+
+  .balance-side ul li::before {
+    font-size: 0.75rem;
+    margin-top: 0.1rem;
+  }
+
+  .balance-side.social ul li::before { content: '▲'; color: #9333EA; }
+  .balance-side.interest ul li::before { content: '◆'; color: #0EA5E9; }
+
+  /* ── CREATOR TRUST ── */
+  .trust-strip {
+    background: linear-gradient(135deg, #1A1018 0%, #2D0F1A 100%);
+    border-radius: 4px;
+    padding: 2.5rem 2rem;
+    margin: 3rem 0;
+    display: flex; gap: 2rem; flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .trust-big-num {
+    font-family: var(--serif);
+    font-size: 4.5rem;
+    font-weight: 700;
+    color: var(--red);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .trust-text-block { flex: 1; min-width: 200px; }
+
+  .trust-text-title {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.817);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .trust-text-body {
+    font-family: var(--sans);
+    font-size: 0.92rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ── MECHANISM DEEP DIVE ── */
+  .mechanism-list {
+    counter-reset: mech;
+    list-style: none;
+    padding: 0;
+  }
+
+  .mechanism-list li {
+    counter-increment: mech;
+    padding: 1.5rem 0 1.5rem 3.5rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .mechanism-list li::before {
+    content: counter(mech, decimal-leading-zero);
+    position: absolute;
+    left: 0; top: 1.5rem;
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--red);
+    opacity: 0.4;
+    line-height: 1;
+  }
+
+  .mech-title {
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+
+  .mech-body {
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    color: var(--ink-mid);
+    font-weight: 300;
+    line-height: 1.85;
+  }
+
+  /* ── VARIABLE REWARD VISUAL ── */
+  .dopamine-viz {
+    background: var(--ink);
+    border-radius: 4px;
+    padding: 2rem 1.5rem;
+    margin: 2.5rem 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .dopamine-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.817);
+    letter-spacing: 0.15em;
+    margin-bottom: 1.2rem;
+  }
+
+  .dopamine-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 80px;
+  }
+
+  .d-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    position: relative;
+    transition: height 0.8s ease;
+    animation: barPulse var(--dur) ease-in-out infinite;
+    animation-delay: var(--delay);
+  }
+
+  @keyframes barPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .dopamine-caption {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.817);
+    margin-top: 1rem;
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  /* ── CONCLUSION ── */
+  .conclusion-section {
+    background: var(--ink);
+   
+    color: #fff;
+    padding: 5rem 2rem;
+  }
+
+  .conclusion-inner { max-width: 820px; margin: 0 auto; }
+
+  .conclusion-title {
+    font-family: var(--serif);
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 2rem;
+    color: #fff;
+  }
+
+  .conclusion-title .red { color: var(--red); }
+
+  .conclusion-body {
+    font-family: var(--sans);
+    font-size: 1rem;
+    color: rgba(255,255,255,0.6);
+    font-weight: 300;
+    line-height: 1.9;
+    margin-bottom: 1.5rem;
+    max-width: 660px;
+  }
+
+  .final-note {
+    margin-top: 3rem;
+    padding: 2rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 3px;
+  }
+
+  .final-note-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+
+  .final-note p {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: #0D0A0E;
+    padding: 2rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 0.12em;
+  }
+
+  /* ── ENTER ANIMATIONS ── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .stat-row { grid-template-columns: 1fr; }
+    .stat-box { border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-noise"></div>
+  <div class="hero-accent"></div>
+  <div class="hero-accent-2"></div>
+
+  <div class="hero-tag">产品拆解 · Recommendation Engine</div>
+
+  <h1 class="hero-title">
+    小红书的推荐引擎<br>
+    <span class="accent">——为什么它让你停不下来</span>
+  </h1>
+
+  <p class="hero-sub">
+    你知道每一个下拉刷新背后都是精准算法。<br>但算法到底是什么，它如何操纵你的注意力，让你甘心入局？
+  </p>
+
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <strong>16×</strong>
+      日均打开次数
+    </div>
+    <div class="hero-meta-item">
+      <strong>74 min</strong>
+      日均停留时长
+    </div>
+    <div class="hero-meta-item">
+      <strong>2500+</strong>
+      细分兴趣标签
+    </div>
+    <div class="hero-meta-item">
+      <strong>3亿+</strong>
+      月活用户
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <div class="scroll-line"></div>
+    SCROLL
+  </div>
+</section>
+
+<!-- HOOK -->
+<section class="hook-section">
+  <div class="hook-inner">
+    <p class="big-question">
+      为什么我们明知道每一个下拉刷新背后都是精准的算法，却还是刷停不下来？
+    </p>
+
+    <p class="lead-para">
+      这不是意志力的问题，这是工程学的胜利。小红书的推荐引擎，是一套将<strong>社交图谱</strong>与<strong>兴趣图谱</strong>精密缝合在一起的系统——它既记得你朋友点赞了什么，也记得你三个月前悄悄收藏的那篇露营帖。
+    </p>
+
+    <p class="lead-para">
+      所以，它是怎么在社交粘性与个性化精准之间走钢丝，以及为什么这套机制对<span class="accent">创作者</span>也同样有效——让他们在看不见明确回报的情况下，持续输出内容。
+    </p>
+
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-number">16×</div>
+        <div class="stat-label">日均打开次数</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">74'</div>
+        <div class="stat-label">日均停留时长（分钟）</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">900万+</div>
+        <div class="stat-label">每日新增笔记</div>
+      </div>
+    </div>
+
+    <p class="lead-para">
+      这些数字不是偶然的结果，它们是算法设计的目标函数本身。
+    </p>
+  </div>
+</section>
+
+<!-- BODY -->
+<div class="article-body">
+
+  <!-- SECTION 1: 两张图谱 -->
+  <section class="section fade-in">
+    <div class="section-label">Part 01</div>
+    <h2 class="section-title">双脑同步工作</h2>
+
+    <p class="body-text">
+      理解小红书推荐系统，要先理解它有两套"感知器官"——<strong>社交图谱信号</strong>和<strong>兴趣图谱信号</strong>。这两者并非非此即彼，它们是并行运行、动态加权的双引擎。
+    </p>
+
+    <div class="brain-model">
+
+      <div class="brain-body">
+        <div class="brain-comment">// 两种信号，缺一不可</div>
+        <div class="signal-grid">
+          <div class="signal-card social">
+            <div class="signal-type">Social Graph</div>
+            <div class="signal-name">社交图谱信号</div>
+            <ul class="signal-items">
+              <li>你关注的博主最新发布</li>
+              <li>你朋友点赞/评论的内容</li>
+              <li>粉丝活跃度</li>
+              <li>转发路径深度</li>
+              <li>同城互动关系</li>
+            </ul>
+          </div>
+          <div class="signal-card interest">
+            <div class="signal-type">Interest Graph</div>
+            <div class="signal-name">兴趣图谱信号</div>
+            <ul class="signal-items">
+              <li>历史点赞/收藏话题</li>
+              <li>搜索关键词偏好</li>
+              <li>停留时长（隐式信号）</li>
+              <li>2500+ 细分兴趣标签</li>
+              <li>多模态兴趣向量</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body-text">
+      想象逛街的场景：闺蜜拍着你肩膀说"那家店的口红超好用"，这是<strong>社交信号</strong>；而美妆店员根据你半年来的购买记录、你最常试色的品牌，悄悄在货架上帮你预留了一支——这是<strong>兴趣信号</strong>。小红书同时扮演这两个角色。
+    </p>
+
+    <div class="pull-quote">
+      <p>算法从不问你"你想看什么"，它观察你的每一次手指停顿、每一次截图、每一次分享，然后自己得出答案。</p>
+    </div>
+
+    <p class="body-text">
+      两种信号的权重并非固定。平台会根据用户当前的状态动态调配：刚注册的新用户，系统主要靠兴趣标签引路；而当你已经形成了稳固的社交关系网络，社交信号的权重会逐渐提升——因为此时"朋友推荐"本身就是高质量的背书。
+    </p>
+  </section>
+
+  <!-- SECTION 2: 四级漏斗 -->
+  <section class="section fade-in">
+    <div class="section-label">Part 02</div>
+    <h2 class="section-title">从900万条笔记到你屏幕上那12张图</h2>
+
+    <p class="body-text">
+      每天900万条新笔记涌入平台，你打开App，看到的是经过四级过滤的12-20张卡片。这个漏斗，是整个推荐系统最核心的工程。
+    </p>
+
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-name">召回 Candidate Generation</div>
+          <p class="step-desc">从全量内容库（亿级）中，通过多路并行策略快速筛选出数千条候选。关键技术：<strong>双塔模型（Two-Tower）</strong>将你和笔记都映射到向量空间，用近似最近邻搜索匹配；同时叠加协同过滤（"和你口味相似的人还看了……"）；以及社交召回通道（你关注的人的新内容）。引入大语言模型 NoteLLM 后，冷启动笔记的评论数提升了 3.58%。</p>
+          <span class="step-tag">输出：约数千条候选</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-name">粗排 Pre-ranking</div>
+          <p class="step-desc">用轻量级模型（DNN 或 GBDT）快速预估点击率，剔除明显低质量内容。这一步的核心是<strong>省算力</strong>——把数千条压到几十条，给后续的重计算腾出空间。</p>
+          <span class="step-tag">输出：约数百条</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-name">精排 Fine-ranking</div>
+          <p class="step-desc">多任务打分模型对每条笔记分别预估：点赞概率、评论概率、收藏概率、分享概率、关注概率。系统将各行为加权合并成一个综合分：点赞+1分、收藏+1分、评论+4分、分享+4分、关注+8分。模型每分钟更新一次，实时捕捉你最新的兴趣漂移。</p>
+          <span class="step-tag">输出：精排候选约数十条</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-name">重排 Re-ranking</div>
+          <p class="step-desc">精排只管单条笔记的分数，重排管的是整页的<strong>组合体验</strong>。它检查：同一作者出现太多了吗？同一话题连续出现了吗？首屏是否足够有吸引力？通过序列化优化，最终呈现的是"全局最优"而非"局部最优"的页面。</p>
+          <span class="step-tag">输出：12–20张你看到的卡片</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCORE TABLE -->
+    <p class="body-text">精排的综合评分公式，直白地揭示了平台对不同互动行为的价值判断：</p>
+
+    <div class="score-table-wrap">
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>用户行为</th>
+            <th>权重分值</th>
+            <th>占比</th>
+            <th>平台逻辑</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>关注创作者</td>
+            <td><span class="score-val">+8</span></td>
+            <td>
+              <div class="score-bar-wrap">
+                <div class="score-bar"><div class="score-bar-fill" style="width:89%"></div></div>
+                89%
+              </div>
+            </td>
+            <td>深度认同，关系绑定</td>
+          </tr>
+          <tr>
+            <td>分享给他人</td>
+            <td><span class="score-val">+4</span></td>
+            <td>
+              <div class="score-bar-wrap">
+                <div class="score-bar"><div class="score-bar-fill" style="width:44%"></div></div>
+                44%
+              </div>
+            </td>
+            <td>社交裂变，信任传递</td>
+          </tr>
+          <tr>
+            <td>评论</td>
+            <td><span class="score-val">+4</span></td>
+            <td>
+              <div class="score-bar-wrap">
+                <div class="score-bar"><div class="score-bar-fill" style="width:44%"></div></div>
+                44%
+              </div>
+            </td>
+            <td>深度参与，情感投入</td>
+          </tr>
+          <tr>
+            <td>收藏</td>
+            <td><span class="score-val">+1</span></td>
+            <td>
+              <div class="score-bar-wrap">
+                <div class="score-bar"><div class="score-bar-fill" style="width:11%"></div></div>
+                11%
+              </div>
+            </td>
+            <td>有用，但未必喜欢</td>
+          </tr>
+          <tr>
+            <td>点赞</td>
+            <td><span class="score-val">+1</span></td>
+            <td>
+              <div class="score-bar-wrap">
+                <div class="score-bar"><div class="score-bar-fill" style="width:11%"></div></div>
+                11%
+              </div>
+            </td>
+            <td>轻量肯定，成本最低</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="body-text">
+      这张表解释了为什么评论区的内容创作者那么在乎评论——在算法眼里，一条真实评论的价值是四个点赞之和。它也解释了为什么平台拼命优化"关注转化"：关注一个人，就是把一段社交关系永久写入你的图谱。
+    </p>
+  </section>
+
+  <!-- SECTION 3: 两张图谱如何平衡 -->
+  <section class="section fade-in">
+    <div class="section-label">Part 03</div>
+    <h2 class="section-title">钢丝上的平衡：社交 vs 兴趣</h2>
+
+    <p class="body-text">
+      社交信号和兴趣信号各有缺陷。如果全靠社交信号，你只能看到"圈子里的回音"——你的朋友都在追某个博主，于是算法把那个博主的内容不断推给你，即使你对那个话题其实并不感冒。这叫<strong>信息茧房</strong>。
+    </p>
+    <p class="body-text">
+      如果全靠兴趣信号，你会陷入另一种困境：只看自己历史上喜欢的东西，永远发现不了新的兴趣——算法帮你建了一间回音室，把你锁在里面。
+    </p>
+
+    <div class="balance-card">
+      <div class="balance-side social">
+        <div class="balance-side-label">Social Signal</div>
+        <div class="balance-side-title">社交图谱优先</div>
+        <ul>
+          <li>增强社交粘性与归属感</li>
+          <li>好友推荐本身是信任背书</li>
+          <li>易形成信息小圈子</li>
+          <li>新鲜感随关系老化而下降</li>
+        </ul>
+      </div>
+      <div class="balance-side interest">
+        <div class="balance-side-label">Interest Signal</div>
+        <div class="balance-side-title">兴趣图谱优先</div>
+        <ul>
+          <li>内容精准匹配，停留时长↑</li>
+          <li>冷启动新用户时尤其有效</li>
+          <li>可能导致内容同质化</li>
+          <li>无法反映即时社交动态</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="body-text">
+      小红书的解法是<strong>动态配比</strong>，而非固定公式。就像调鸡尾酒——根据用户的当前状态、历史行为、内容生态健康度，实时调整两者的比例。当你刚关注了一个新博主，社交权重会短暂提升；当你进入"刷刷刷"的惯性滚动状态，兴趣权重接管，向你精准投喂。
+    </p>
+
+    <p class="body-text">
+      还有一个被低估的机制：<strong>探索流量注入</strong>。系统会定期把你从未接触过的内容类别穿插进来，不是因为它认为你喜欢，而是因为它需要探索你的兴趣边界。这也是为什么你偶尔会看到一条"跑题"的笔记，然后发现自己意外地喜欢——那不是算法出错，那是它在测试你。
+    </p>
+  </section>
+
+  <!-- SECTION 4: 算法如何操控注意力 -->
+  <section class="section fade-in">
+    <div class="section-label">Part 04</div>
+    <h2 class="section-title">算法如何操纵你的注意力</h2>
+
+    <p class="body-text">
+      这才是这篇文章最核心的问题。不是"推荐系统怎么运作"，而是：它到底在利用人类心理的哪些弱点？
+    </p>
+
+    <ol class="mechanism-list">
+      <li>
+        <div class="mech-title">变量奖励机制（Variable Reward）</div>
+        <p class="mech-body">老虎机比赌固定赔率更让人上瘾，因为<strong>不确定性本身就是奖励</strong>。每次下拉刷新，你不知道会看到一条平淡无奇的笔记，还是那条会让你尖叫转发的视频。这种不确定性激活了大脑的多巴胺回路——不是内容本身让你上瘾，是"下一条也许更好"这个预期让你停不下来。推荐算法刻意维护这种不确定性，它不会连续给你五条完美匹配的内容，因为那样你很快就满足了。</p>
+      </li>
+      <li>
+        <div class="mech-title">无限滚动 + 无尽感（Infinite Scroll）</div>
+        <p class="mech-body">传统翻页机制天然设置了"停顿点"——翻到下一页，你有机会意识到"我要不要继续看"。无限滚动移除了这个停顿点。你的手指从来不需要做一个主动决定，只需要保持惯性。重排阶段确保每一屏的最后一张卡片都"够吸引人"，足以让你不由自主地继续往下滑。</p>
+      </li>
+      <li>
+        <div class="mech-title">社会认同感（Social Proof）</div>
+        <p class="mech-body">当你看到一条笔记有3000条评论，你不需要读完它就会觉得"这一定有价值"。社交图谱信号在这里起了关键作用：当你看到的点赞数来自于"你关注的人"而非陌生人，说服力呈指数级提升。算法深知这一点，因此社交召回通道的内容会在展示时附带好友互动提示——"你关注的XX收藏了这篇"。</p>
+      </li>
+      <li>
+        <div class="mech-title">自我叙事的镜像化（Identity Mirroring）</div>
+        <p class="mech-body">推荐系统最高明的地方，不是给你推你喜欢的内容，而是给你推<strong>符合你自我认知的内容</strong>。如果你把自己定位为"精致生活爱好者"，算法会持续投喂符合这个身份的内容——不仅仅是因为你点赞了那些东西，更因为它读懂了你的自我叙事。每次刷到契合自我形象的内容，你都会产生一种隐隐的满足感——被看见了。</p>
+      </li>
+      <li>
+        <div class="mech-title">损失厌恶（Fear of Missing Out）</div>
+        <p class="mech-body">实时热点信号的注入，制造了一种紧迫感。那条正在爆红的笔记，那个话题挑战的截止日期，那个"仅剩最后一天"的活动——这些都在隐隐告诉你：如果你现在不看，你会错过什么。FOMO 不需要明说，算法靠时序信号和热点标签来传递它。</p>
+      </li>
+    </ol>
+
+    <!-- DOPAMINE VIZ -->
+    <div class="dopamine-viz">
+      <div class="dopamine-label">// 变量奖励曲线 — 不确定性维持多巴胺水平</div>
+      <div class="dopamine-bars" id="dopamineBars"></div>
+      <div class="dopamine-caption">算法不追求每次都"完美命中"——它追求的是维持你的期待感。完美命中只需出现在恰好要放弃的那一刻。</div>
+    </div>
+
+    <p class="body-text">
+      这五套机制不是独立运作的——它们是相互叠加的。变量奖励制造期待，无限滚动维持惯性，社会认同降低判断门槛，身份镜像制造归属感，损失厌恶阻止你退出。每一套单独拆开都不致命，组合在一起，就是那个你明知道要放下却放不下的 App。
+    </p>
+  </section>
+
+  <!-- SECTION 5: 创作者信任 -->
+  <section class="section fade-in">
+    <div class="section-label">Part 05</div>
+    <h2 class="section-title">另一半方程式：创作者为什么不离开</h2>
+
+    <p class="body-text">
+      推荐算法对用户有效是一回事——但如果创作者觉得规则不公平、不可预期，他们会停止输出内容，整个生态就会崩塌。小红书在这一点上的设计，同样值得拆解。
+    </p>
+
+    <div class="trust-strip">
+      <div class="trust-big-num">½</div>
+      <div class="trust-text-block">
+        <div class="trust-text-title">去中心化分发原则</div>
+        <div class="trust-text-body">平台约一半的推荐流量被优先分给普通创作者（非头部）。这不是公益，而是生态工程——大V垄断流量的平台，最终会失去内容多样性，进而失去用户黏性。小红书选择主动"让利"给长尾创作者，用以维持生态活力。</div>
+      </div>
+    </div>
+
+    <p class="body-text">
+      更关键的是内容质量评估框架的设计原则：<strong>只看笔记的静态特征，不看历史流量</strong>。
+    </p>
+
+    <p class="body-text">
+      这意味着：一个零粉丝的新人发布的优质笔记，和一个百万粉丝的大V发布的笔记，在系统的初始评估中站在同一起跑线上。系统看的是图像质量、内容深度、多模态得分——不是你过去积累的流量背书。
+    </p>
+
+    <p class="body-text">
+      这套机制同时给创作者提供了可预期的正反馈：只要持续输出高质量内容，就能持续获得曝光。算法不会因为你上条笔记爆了就给你下条更多流量，也不会因为你上条笔记扑街就惩罚你的新作品——这对创作者来说，是一种相对稳定的"算法信任"。
+    </p>
+
+    <div class="pull-quote">
+      <p>平台本质上是在做同一件事：维持一个让双方都愿意留下来的精妙幻觉——用户觉得自己在主动探索，创作者觉得努力终会被看见。</p>
+    </div>
+  </section>
+
+  <!-- SECTION 6: 冷启动 -->
+  <section class="section fade-in">
+    <div class="section-label">Part 06</div>
+    <h2 class="section-title">冷启动：当算法对你一无所知时</h2>
+
+    <p class="body-text">
+      新用户和新内容是推荐系统最棘手的挑战——没有历史数据，算法对你一无所知。这个问题如果处理不好，会直接导致用户在第一次打开 App 时就流失。
+    </p>
+
+    <p class="body-text">
+      <strong>对新用户</strong>：小红书在注册流程中引导你主动选择兴趣标签和初始关注博主。这不是为了"个性化体验"而已——这是系统在主动索取冷启动数据。你以为你在自由选择，其实你在给算法喂第一批种子。这些种子迅速生长成初步兴趣画像，首页内容因此有了方向。
+    </p>
+
+    <p class="body-text">
+      <strong>对新内容</strong>：系统先用大语言模型（NoteLLM）分析笔记的文本、图像、标签，生成内容向量；然后通过双塔模型匹配最可能感兴趣的"种子用户"群体，进行小范围试推；根据这批种子用户的反馈（点击率、评论数），贝叶斯更新曝光量，决定是否扩散到更大人群——这套流程，本质上是一次<strong>快速A/B实验</strong>，用真实用户反馈代替人工判断。
+    </p>
+
+    <p class="body-text">
+      引入 LLM 之后，新笔记的评论数提升了 3.58%。听起来不大，但考虑到每天新增笔记900万条，这个数字意味着每天多出几十万条真实的用户互动，反哺回算法的训练数据——一个正向飞轮。
+    </p>
+  </section>
+
+</div>
+
+<!-- CONCLUSION -->
+<section class="conclusion-section">
+  <div class="conclusion-inner">
+    <h2 class="conclusion-title">
+      你停不下来，<br>是因为算法赢了吗？<br>
+      <span class="red">不完全是。</span>
+    </h2>
+
+    <p class="conclusion-body">
+      说"算法操纵了你"是不准确的。更准确的说法是：算法发现了你本来就存在的兴趣、本来就渴望的社交认同、本来就懒得做决定的惰性，然后把这些拼成了一个无缝的产品体验。
+    </p>
+
+    <p class="conclusion-body">
+      你甘心入局，不是因为无知，而是因为它给的东西是真实的——那条关于露营的笔记确实让你心动，那个你关注的博主确实说出了你想说的话。算法只是做了一件事：让这些真实发生的频率变得更高、间隔变得更短。
+    </p>
+
+    <p class="conclusion-body">
+      理解这套机制，不是为了逃脱它，而是为了在知情的情况下做出选择——哪些时间值得投入，哪些下拉刷新是惯性而非真实需求。
+    </p>
+
+    <div class="final-note">
+      <div class="final-note-label">产品设计师的视角</div>
+      <p>
+        小红书推荐引擎最值得学习的地方，不是技术的复杂性，而是它对"用户体验"和"创作者生态"的同步维护——双边市场的推荐系统，必须让两边都相信自己被公平对待。这比让单一用户上瘾难得多，也价值得多。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  产品拆解 · XIAOHONGSHU RECOMMENDATION ENGINE · 2026 &nbsp;·&nbsp; 数据来源：小红书WILL大会、新浪财经、千瓜数据、腾讯云·机器之心
+</footer>
+
+<script>
+// Dopamine bar viz
+const bars = document.getElementById('dopamineBars');
+const heights = [30, 45, 20, 65, 35, 80, 25, 50, 15, 70, 40, 90, 30, 55, 20, 75, 35, 60, 45, 85, 25, 40, 70, 55, 30, 65, 20, 80, 45, 35];
+const colors = ['#FF2442','#FF5C73','rgba(255,36,66,0.4)'];
+
+heights.forEach((h, i) => {
+  const bar = document.createElement('div');
+  bar.classList.add('d-bar');
+  const colorIdx = h > 70 ? 0 : h > 45 ? 1 : 2;
+  bar.style.cssText = `height:${h}%;background:${colors[colorIdx]};--dur:${2 + Math.random()*3}s;--delay:${Math.random()*2}s`;
+  bars.appendChild(bar);
+});
+
+// Intersection observer for fade-in
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('visible');
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
